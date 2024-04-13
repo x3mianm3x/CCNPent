@@ -1432,6 +1432,7 @@ int e1/3
  no shut
  no ip add
 int e1/2
+ no shut
  ip add 10.0.23.2 255.255.255.0
 int e1/1
  ip add 10.0.2.2 255.255.255.0
