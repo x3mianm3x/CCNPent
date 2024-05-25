@@ -91,8 +91,8 @@ R4:
 config t
 router eigrp 100
 no auto-summary
-network ________ 0.0.0.__
-network ________ 0.0.0.__
+network 10.1.4.4 0.0.0.3
+network 10.1.4.8 0.0.0.3
 end
 
 
@@ -107,12 +107,12 @@ network 192.168.1.128 0.0.0.31
 
 D2#
 config t
-router eigrp CCNPENARSI
-address-family _____ ________ ___  ____
-network __________  _________
-network __________  _________
-network __________  _________
-network __________  _________
+router eigrp ENCOR
+ address-family ipv4 unicast autonomous-system 100
+ network 10.2.1.0 0.0.0.255 
+ network 10.2.2.0 0.0.0.255
+ network 192.168.1.128 0.0.0.31
+ network 10.1.4.8 0.0.0.3
 
 D        10.2.2.0/24 [90/281856] via 10.1.4.10, 00:02:32, 
                      [90/281856] v
@@ -123,10 +123,10 @@ config t
 int lo 0
 ip add 3.3.3.3 255.255.255.255
 router ospf 1
-router-id _______
-network _______ _______ area __
-network _______ _______ area __
-network _______ _______ area __
+router-id 3.3.3.3
+network 3.3.3.3 0.0.0.0 area 0
+network 10.1.1.8 0.0.0.3 area 34
+network 10.1.4.4 0.0.0.3 area 0
 do sh ip protocol
 @@2:
 config t
@@ -153,8 +153,17 @@ int lo 0
 ip add 1.1.1.1 255.255.255.255
 router ospf 1
 router-id 1.1.1.1
-network _______ _______ area __
-network _______ _______ area __
+network 1.1.1.1 0.0.0.0 area 12
+network 10.1.1.0 0.0.0.3 area 12
+
+#OSPF TO EIGRP ROUTE REDISTRIBUTION: 0E2
+@r4:
+CONFIG T
+router eigrp 100
+redistribute ospf 1 metric 10000 100 255 1 1500
+exit
+router ospf 1
+ redistribute eigrp 100 subnets
 
 
 do sh ip protocol
@@ -171,18 +180,36 @@ Loading
 FULL: converged
 
 TASK9: bASIC iBGP and eBGP for Encor:
-@bgp@R1:
+@bgp@R1: NO ADDRESS-FAMILY:
 config t
 no router bgp 1
 router bgp 1
 bgp log-neighbor-changes
-neighbor _________ remote-as __
-neighbor _________ remote-as __
+neighbor 209.9.9.3 remote-as 3
+neighbor 207.7.7.2 remote-as 2
 neighbor 208.8.8.4 Remote-as 45
 network 10.1.1.0 Mask 255.255.255.252
-network __________ mask __________
-network __________ mask __________
-network __________ mask __________
+network 209.9.9.0 mask 255.255.255.0
+network 207.7.7.0 mask 255.255.255.0
+network 208.8.8.0 mask 255.255.255.0
+do sh ip bgp summary
+
+@bgp@R1: USING/WITH/64BIT ADDRESS-FAMILY:
+config t
+no router bgp 1
+router bgp 1
+bgp log-neighbor-changes
+neighbor 209.9.9.3 remote-as 3
+neighbor 207.7.7.2 remote-as 2
+neighbor 208.8.8.4 Remote-as 45
+Address-family ipv4
+       neighbor 209.9.9.3 activate
+       neighbor 207.7.7.2 activate
+        neighbor 208.8.8.4 activate
+	network 10.1.1.0 Mask 255.255.255.252
+	network 209.9.9.0 mask 255.255.255.0
+	network 207.7.7.0 mask 255.255.255.0
+	network 208.8.8.0 mask 255.255.255.0
 do sh ip bgp summary
 
 @@Isp3:
@@ -206,18 +233,18 @@ end
 config t
 router bgp 2
 bgp log-neighbor-changes
-neighbor _________ remote-as __
-neighbor _________ remote-as __
-neighbor _________ remote-as __
-neighbor _________ remote-as __
+neighbor 24.2.4.4 remote-as 45
+neighbor 25.2.5.5 remote-as 45
+neighbor 32.3.2.3 remote-as 3
+neighbor 207.7.7.1 remote-as 1
+network 207.0.0.0 mask 255.255.255.0
 network 22.22.22.22 mask 255.255.255.255
 network 24.2.4.0 mask 255.255.255.0
 network 25.2.5.0 mask 255.255.255.0
 network 32.3.2.0 mask 255.255.255.0
-network 207.7.7.0 mask 255.255.255.0
-!fake StaticInternet:
+!fakeInternet
 network 0.0.0.0
-ip route 0.0.0.0 0.0.0.0 Null 0
+ip route 0.0.0.0 0.0.0.0 null 0
 ip route 10.0.0.0 255.0.0.0 207.7.7.1
 end
 
@@ -258,7 +285,7 @@ TASK11: pUT bgp routes in OSPF:
 R1:
 config t
 router ospf 1
-_________________  _________
+default-information originate
 @r4
 ping 8.8.8.8
 
@@ -305,6 +332,7 @@ d1:
 config t
 ip access-list extended p1tod2
  permit ip host 10.2.1.101 any
+ 20 permit ip host 10.2.1.102 any
  exit
 route-map RMHOPD2
  match ip address p1tod2
@@ -390,7 +418,12 @@ config t
 int e1/1
  ip ospf priority 255
 int e1/2
- ip _____ ____  ___
+ ip ospf priority 255
+end
+@exam exam task: PATALO SI r4:
+config t
+int e1/2
+ ip ospf priority 0
 end
 
 @r2:
@@ -448,8 +481,7 @@ R2:
 config t
 no ip prefix-list TEST1
 ip prefix-list TEST1 seq 5 deny 11.1.1.1/32
-ip prefix-list TEST1 seq 10 deny 111.1.1.1/32
-ip prefix-list TEST1 seq 15 permit 0.0.0.0/0 le 32
+ip prefix-list TEST1 seq 10 permit 0.0.0.0/0 le 32
 router ospf 1
  area 0 filter-list prefix TEST1 in
 end
@@ -501,6 +533,7 @@ config t
 ip subnet-zero
 route-map CON
  match interface lo 11
+ exit
 int lo 11
  ip add 11.11.11.11 255.255.255.255
 no router ospf 1
@@ -556,7 +589,7 @@ O IA     10.1.1.4/30 [110/20] via 10.1.1.9, 00:00:32, Ethernet1/2
       11.0.0.0/32 is subnetted, 1 subnets
 O E1     11.11.11.11 [110/50] via 10.1.1.9, 00:00:22, Ethernet1/2
 
-MAKE AREA 34 A STUB AREA:
+MAKE AREA 34 A STUB\EDGE\DULO AREA:
  
 R3:
 config t
@@ -585,7 +618,7 @@ What was gone?
 Hence, Stub = no Oe1, or Oe2 its been replaced by O*IA
 but try to ping 1.1.1.1
 
-MAKE AREA 34 A TOTALLY STUBBY AREA:
+MAKE AREA 34 A TOTALLY STUBBY AREA:\dulong Dulo
 
 R3: totally stubby.
 config t
@@ -608,7 +641,7 @@ O        3.3.3.3 [110/11] via 10.1.1.9, 00:00:00, Ethernet1/2
 in a Totally Stubby area, No OIA, OE2 only O*IA and O
 
 BUT THEN YOU REALIZE THAT AREA 34 AND R4 HAS EIGRP ON IT! OH SYET!!
-
+NOT SO STUBBY AREA/ di Pala DULONG DULO:
 r3:
 !Cisco Proprietary
 config t
@@ -658,7 +691,7 @@ O        3.3.3.3 [110/11] via 10.1.1.9, 00:00:57, Ethernet1/2
 O IA     10.1.1.0/30 [110/30] via 10.1.1.9, 00:00:47, Ethernet1/2
 O IA     10.1.1.4/30 [110/20] via 10.1.1.9, 00:00:47, Ethernet1/2
 
-R3:
+R3: TOTALLY NOT SO STUBBY AREA/ TNSSA/ Sobrang DiPaLa Dulong Dulo
 config t
  router ospf 1
   area 34 nssa default-information-originate
@@ -760,9 +793,9 @@ O        4.4.5.0/24 [110/11] via 10.1.1.10, 00:00:24, Ethernet1/2
 O        4.4.6.0/24 [110/11] via 10.1.1.10, 00:00:24, Ethernet1/2
 
 R4:
-
-R4(config-router)#router ospf 1
-R4(config-router)# summary-address 4.4.0.0 255.255.252.0
+config t
+router ospf 1
+ summary-address 4.4.0.0 255.255.252.0
 R4(config-router)#do sr os | inc Null
 O        4.4.0.0/22 is a summary, 00:00:21, Null0
 R4(config-router)#
