@@ -1418,3 +1418,9 @@ standby 1 ip 192.168.102.7
 standby 1 preempt
 standby 1 priority 101
 end
+
+homeLAB
+ping 8.8.8.8
+ping 8.8.8.8::8888
+R1-PLDT, R2-Globe
+ip sla + hsrp
