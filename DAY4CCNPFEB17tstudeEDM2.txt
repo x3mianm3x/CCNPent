@@ -108,6 +108,9 @@ conf t
 		network 192.168.1.130 0.0.0.0
 		end
 	sh ip eigrp nei
+        sh ip eigrp topology
+        sh ip route eigrp
+
 
 R4:
 config t
@@ -139,6 +142,17 @@ R1:
 config t
 router ospf 1
 network 10.1.1.0 0.0.0.3 area 12
+
+P1: Floating def route 
+conf t
+ip route 0.0.0.0 0.0.0.0 10.2.1.1 1
+ip route 0.0.0.0 0.0.0.0 10.2.1.2 5
+end
+P2: Floating def route 
+conf t
+ip route 0.0.0.0 0.0.0.0 10.2.1.2 1
+ip route 0.0.0.0 0.0.0.0 10.2.1.1 5
+end
 
 @@@
 TASK9.3: BASIC eBGP FOR ISPS and R1.
